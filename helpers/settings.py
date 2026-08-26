@@ -9,7 +9,7 @@ from typing import Any, Literal, TypedDict, cast, TypeVar
 import models
 import pytz  # type: ignore
 from helpers import runtime, defer, git, subagents
-from . import files, dotenv
+from . import files, dotenv, fs
 from helpers.print_style import PrintStyle
 from helpers.providers import get_providers, FieldOption as ProvidersFO
 from helpers.secrets import get_default_secrets_manager
@@ -172,7 +172,8 @@ UI_CONTROL_VISIBILITY_DEFAULTS = {
     "rightCanvasRail": {"mobile": True, "desktop": True},
 }
 
-SETTINGS_FILE = files.get_abs_path("usr/settings.json")
+# use the centralized FS resolver so settings live under AGENT_FS_ROOT/FOOTPATH
+SETTINGS_FILE = fs.a0_path("settings.json")
 _settings: Settings | None = None
 _runtime_settings_snapshot: Settings | None = None
 
@@ -545,10 +546,8 @@ def get_default_settings() -> Settings:
         ),
         timezone=_normalize_timezone_setting(get_default_value("timezone", TIMEZONE_AUTO)),
         time_format=_normalize_time_format(get_default_value("time_format", TIME_FORMAT_12H)),
-        ui_control_visibility=_normalize_ui_control_visibility(
-            get_default_value("ui_control_visibility", UI_CONTROL_VISIBILITY_DEFAULTS)
-        ),
-        workdir_path=get_default_value("workdir_path", files.get_abs_path_dockerized("usr/workdir")),
+        ui_control_visibility=_normalize_ui_control_visibility(get_default_value("ui_control_visibility", UI_CONTROL_VISIBILITY_DEFAULTS)),
+        workdir_path=get_default_value("workdir_path", fs.a0_path("workdir")),
         workdir_show=get_default_value("workdir_show", True),
         workdir_max_depth=get_default_value("workdir_max_depth", 5),
         workdir_max_files=get_default_value("workdir_max_files", 20),
@@ -743,7 +742,7 @@ def _env_to_dict(data: str):
         
         # If quoted, treat as string
         if value.startswith('"') and value.endswith('"'):
-            result[key] = value[1:-1].replace('\\"', '"')  # Unescape quotes
+            result[key] = value[1:-1].replace('\"', '"')  # Unescape quotes
         elif value.startswith("'") and value.endswith("'"):
             result[key] = value[1:-1].replace("\\'", "'")  # Unescape quotes
         else:
