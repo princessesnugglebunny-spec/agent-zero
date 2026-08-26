@@ -1,0 +1,17 @@
+# systemd service template for Agent Zero
+
+[Unit]
+Description=Agent Zero AI framework
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+WorkingDirectory={{WORKDIR}}
+EnvironmentFile=-/etc/default/agent-zero
+ExecStart={{PYTHON}} {{WORKDIR}}/run_ui.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
